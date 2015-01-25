@@ -33,6 +33,8 @@ import com.datatorrent.lib.db.Connectable;
  */
 public class HBaseStore implements Connectable {
 
+  public static final String USER_NAME_SPECIFIER = "%USER_NAME%";
+  
   private String zookeeperQuorum;
   private int zookeeperClientPort;
   protected String tableName;
@@ -184,7 +186,9 @@ public class HBaseStore implements Connectable {
   @Override
   public void connect() throws IOException {
     if ((principal != null) && (keytab != null)) {
-      UserGroupInformation.loginUserFromKeytab(principal, keytab);
+      String lprincipal = evaluateProperty(principal);
+      String lkeytab = evaluateProperty(keytab);
+      UserGroupInformation.loginUserFromKeytab(lprincipal, lkeytab);
     }
     configuration = HBaseConfiguration.create();
     configuration.set("hbase.zookeeper.quorum", zookeeperQuorum);
@@ -192,6 +196,14 @@ public class HBaseStore implements Connectable {
     table = new HTable(configuration, tableName);
     table.setAutoFlushTo(false);
 
+  }
+  
+  private String evaluateProperty(String property) throws IOException
+  {
+    if (property.contains(USER_NAME_SPECIFIER)) {
+     property = property.replaceAll(USER_NAME_SPECIFIER, UserGroupInformation.getLoginUser().getShortUserName()); 
+    }
+    return property;
   }
 
   @Override
