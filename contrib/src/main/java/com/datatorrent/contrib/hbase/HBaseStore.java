@@ -17,6 +17,9 @@ package com.datatorrent.contrib.hbase;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTable;
@@ -35,12 +38,18 @@ public class HBaseStore implements Connectable {
 
   public static final String USER_NAME_SPECIFIER = "%USER_NAME%";
   
+  private static final Logger logger = LoggerFactory.getLogger(HBaseStore.class);
+  
   private String zookeeperQuorum;
   private int zookeeperClientPort;
   protected String tableName;
   
   protected String principal;
-  protected String keytab;
+  protected String keytabPath;
+  // Default interval 30 min
+  protected long renewCheckInterval = 30 * 60 * 1000;
+  protected transient Thread renewer;
+  private volatile transient boolean doRenew;
 
   protected transient HTable table;
 
@@ -127,20 +136,30 @@ public class HBaseStore implements Connectable {
    *
    * @return The Kerberos keytab path
    */
-  public String getKeytab()
+  public String getKeytabPath()
   {
-    return keytab;
+    return keytabPath;
   }
 
   /**
    * Set the Kerberos keytab path.
    *
-   * @param keytab
+   * @param keytabPath
    *            The Kerberos keytab path
    */
-  public void setKeytab(String keytab)
+  public void setKeytabPath(String keytabPath)
   {
-    this.keytab = keytab;
+    this.keytabPath = keytabPath;
+  }
+
+  public long getRenewCheckInterval()
+  {
+    return renewCheckInterval;
+  }
+
+  public void setRenewCheckInterval(long renewCheckInterval)
+  {
+    this.renewCheckInterval = renewCheckInterval;
   }
 
   /**
@@ -185,14 +204,43 @@ public class HBaseStore implements Connectable {
 
   @Override
   public void connect() throws IOException {
-    if ((principal != null) && (keytab != null)) {
+    if ((principal != null) && (keytabPath != null)) {
       String lprincipal = evaluateProperty(principal);
-      String lkeytab = evaluateProperty(keytab);
-      UserGroupInformation.loginUserFromKeytab(lprincipal, lkeytab);
+      String lkeytabPath = evaluateProperty(keytabPath);
+      UserGroupInformation.loginUserFromKeytab(lprincipal, lkeytabPath);
+      doRenew = true;
+      renewer = new Thread(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          try {
+            while (doRenew) {
+              Thread.sleep(renewCheckInterval);
+              try {
+                UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
+              } catch (IOException e) {
+                logger.error("Error trying to relogin from keytab", e);
+              }
+            }
+          } catch (InterruptedException e) {
+            if (doRenew) {
+              logger.warn("Renewer interrupted... stopping");
+            }
+          }
+        }
+      });
+      renewer.start();
     }
     configuration = HBaseConfiguration.create();
-    configuration.set("hbase.zookeeper.quorum", zookeeperQuorum);
-    configuration.set("hbase.zookeeper.property.clientPort", "" 	+ zookeeperClientPort);
+    // The default configuration is loaded from resources in classpath, the following parameters can be optionally set
+    // to override defaults
+    if (zookeeperQuorum != null) {
+      configuration.set("hbase.zookeeper.quorum", zookeeperQuorum);
+    }
+    if (zookeeperClientPort != 0) {
+      configuration.set("hbase.zookeeper.property.clientPort", "" + zookeeperClientPort);
+    }
     table = new HTable(configuration, tableName);
     table.setAutoFlushTo(false);
 
@@ -208,8 +256,15 @@ public class HBaseStore implements Connectable {
 
   @Override
   public void disconnect() throws IOException {
-    // not applicable for hbase
-
+    if (renewer != null) {
+      doRenew = false;
+      renewer.interrupt();
+      try {
+        renewer.join();
+      } catch (InterruptedException e) {
+        logger.warn("Unsuccessful waiting for renewer to finish. Proceeding to shutdown", e);
+      }
+    }
   }
 
   @Override
