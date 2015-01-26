@@ -214,6 +214,7 @@ public class HBaseStore implements Connectable {
         @Override
         public void run()
         {
+          logger.debug("Renewer starting");
           try {
             while (doRenew) {
               Thread.sleep(renewCheckInterval);
@@ -228,6 +229,7 @@ public class HBaseStore implements Connectable {
               logger.warn("Renewer interrupted... stopping");
             }
           }
+          logger.debug("Renewer ending");
         }
       });
       renewer.start();
