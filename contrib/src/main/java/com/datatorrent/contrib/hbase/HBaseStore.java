@@ -47,9 +47,9 @@ public class HBaseStore implements Connectable {
   protected String principal;
   protected String keytabPath;
   // Default interval 30 min
-  protected long renewCheckInterval = 30 * 60 * 1000;
-  protected transient Thread renewer;
-  private volatile transient boolean doRenew;
+  protected long reloginCheckInterval = 30 * 60 * 1000;
+  protected transient Thread loginRenewer;
+  private volatile transient boolean doRelogin;
 
   protected transient HTable table;
 
@@ -152,14 +152,25 @@ public class HBaseStore implements Connectable {
     this.keytabPath = keytabPath;
   }
 
-  public long getRenewCheckInterval()
+  /**
+   * Get the interval to check for relogin.
+   *
+   * @return The interval to check for relogin
+   */
+  public long getReloginCheckInterval()
   {
-    return renewCheckInterval;
+    return reloginCheckInterval;
   }
 
-  public void setRenewCheckInterval(long renewCheckInterval)
+  /**
+   * Set the interval to check for relogin.
+   *
+   * @param reloginCheckInterval
+   *            The interval to check for relogin
+   */
+  public void setReloginCheckInterval(long reloginCheckInterval)
   {
-    this.renewCheckInterval = renewCheckInterval;
+    this.reloginCheckInterval = reloginCheckInterval;
   }
 
   /**
@@ -208,16 +219,16 @@ public class HBaseStore implements Connectable {
       String lprincipal = evaluateProperty(principal);
       String lkeytabPath = evaluateProperty(keytabPath);
       UserGroupInformation.loginUserFromKeytab(lprincipal, lkeytabPath);
-      doRenew = true;
-      renewer = new Thread(new Runnable()
+      doRelogin = true;
+      loginRenewer = new Thread(new Runnable()
       {
         @Override
         public void run()
         {
           logger.debug("Renewer starting");
           try {
-            while (doRenew) {
-              Thread.sleep(renewCheckInterval);
+            while (doRelogin) {
+              Thread.sleep(reloginCheckInterval);
               try {
                 UserGroupInformation.getLoginUser().checkTGTAndReloginFromKeytab();
               } catch (IOException e) {
@@ -225,14 +236,14 @@ public class HBaseStore implements Connectable {
               }
             }
           } catch (InterruptedException e) {
-            if (doRenew) {
+            if (doRelogin) {
               logger.warn("Renewer interrupted... stopping");
             }
           }
           logger.debug("Renewer ending");
         }
       });
-      renewer.start();
+      loginRenewer.start();
     }
     configuration = HBaseConfiguration.create();
     // The default configuration is loaded from resources in classpath, the following parameters can be optionally set
@@ -258,11 +269,11 @@ public class HBaseStore implements Connectable {
 
   @Override
   public void disconnect() throws IOException {
-    if (renewer != null) {
-      doRenew = false;
-      renewer.interrupt();
+    if (loginRenewer != null) {
+      doRelogin = false;
+      loginRenewer.interrupt();
       try {
-        renewer.join();
+        loginRenewer.join();
       } catch (InterruptedException e) {
         logger.warn("Unsuccessful waiting for renewer to finish. Proceeding to shutdown", e);
       }
