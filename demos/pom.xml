@@ -26,6 +26,7 @@
     <module>uniquecount</module>
     <module>r</module>
     <module>echoserver</module>
+    <module>eventtree</module>
   </modules>
 
 </project>
