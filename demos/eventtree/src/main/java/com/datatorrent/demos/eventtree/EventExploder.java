@@ -16,7 +16,7 @@ public class EventExploder extends BaseOperator
   private int explodeFactor = 10;
   //private int explodeFactor = 2;
   
-  private long processedInterval = 100;
+  private long processedInterval = 500;
   
   public transient final DefaultOutputPort<Event> output = new DefaultOutputPort<Event>();
 
