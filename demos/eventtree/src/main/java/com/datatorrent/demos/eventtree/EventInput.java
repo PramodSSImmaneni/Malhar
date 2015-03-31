@@ -17,7 +17,7 @@ public class EventInput implements InputOperator
   int explodeFactor = 10;
   //int explodeFactor = 2;
   
-  int tuplesBlast = 10;
+  int tuplesBlast = 100;
   //int tuplesBlast = 1;
   long waitTimeout = 100;
   //long waitTimeout = 500;
