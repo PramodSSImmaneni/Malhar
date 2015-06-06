@@ -28,9 +28,10 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>ExpirableHdfsBucketStore class.</p>
  *
+ * @param <T>
  * @since 0.9.5
  */
-public class ExpirableHdfsBucketStore<T extends Bucketable & Event> extends HdfsBucketStore<T> implements BucketStore.ExpirableBucketStore<T>
+public class ExpirableHdfsBucketStore<T> extends HdfsBucketStore<T> implements BucketStore.ExpirableBucketStore<T>
 {
 
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
@@ -71,6 +72,12 @@ public class ExpirableHdfsBucketStore<T extends Bucketable & Event> extends Hdfs
         }
       }
     }
+  }
+
+  @Override
+  public ExpirableHdfsBucketStore<T> clone() throws CloneNotSupportedException
+  {
+    return (ExpirableHdfsBucketStore<T>)super.clone();
   }
 
   private static transient final Logger logger = LoggerFactory.getLogger(ExpirableHdfsBucketStore.class);

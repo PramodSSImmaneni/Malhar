@@ -38,19 +38,19 @@ import com.datatorrent.api.annotation.Stateless;
 
 import com.datatorrent.common.util.DTThrowable;
 
-/*
+/**
  * An implementation of FS Writer that writes text files to hdfs which are inserted
  * into hive on committed window callback. HiveStreamCodec is used to make sure that data being sent to a particular hive partition
  * goes to a specific operator partition by passing FSRollingOutputOperator to the stream codec.
  * Also filename is determined uniquely for each tuple going to a specific hive partition.
  *
+ * @since 2.1.0
  */
 public abstract class AbstractFSRollingOutputOperator<T> extends AbstractFileOutputOperator<T> implements CheckpointListener
 {
   private transient String outputFilePath;
   protected MutableInt partNumber;
   protected HashMap<Long, ArrayList<String>> mapFilenames = new HashMap<Long, ArrayList<String>>();
-  protected ArrayList<String> listFileNames = new ArrayList<String>();
   protected HashMap<String, ArrayList<String>> mapPartition = new HashMap<String, ArrayList<String>>();
   protected Queue<Long> queueWindows = new LinkedList<Long>();
   protected long windowIDOfCompletedPart = Stateless.WINDOW_ID;
@@ -103,15 +103,15 @@ public abstract class AbstractFSRollingOutputOperator<T> extends AbstractFileOut
   {
     isEmptyWindow = false;
     if (mapFilenames.containsKey(windowIDOfCompletedPart)) {
-      listFileNames.add(finishedFile);
+      mapFilenames.get(windowIDOfCompletedPart).add(finishedFile);
     }
     else {
-      listFileNames = new ArrayList<String>();
+      ArrayList<String> listFileNames = new ArrayList<String>();
       listFileNames.add(finishedFile);
+      mapFilenames.put(windowIDOfCompletedPart, listFileNames);
     }
     queueWindows.add(windowIDOfCompletedPart);
 
-    mapFilenames.put(windowIDOfCompletedPart, listFileNames);
   }
 
   /*

@@ -54,9 +54,14 @@ import com.datatorrent.lib.counters.BasicCounters;
  * {@link #minReaders}: Minimum number of readers when dynamic partitioning is on.<br/>
  * {@link #intervalMillis}: interval at which stats are processed by the block reader.<br/>
  *
+ * <p/>
+ * It emits a {@link ReaderRecord} which wraps the record and the block id of the record.
+ *
  * @param <R>      type of records.
  * @param <B>      type of blocks.
  * @param <STREAM> type of stream.
+ *
+ * @since 2.1.0
  */
 
 @StatsListener.DataQueueSize
@@ -101,7 +106,7 @@ public abstract class AbstractBlockReader<R, B extends BlockMetadata, STREAM ext
 
   protected transient final StatsListener.Response response;
   protected transient int partitionCount;
-  protected transient final Map<Integer, Long> backlogPerOperator;
+  protected transient final Map<Integer, Integer> backlogPerOperator;
   private transient long nextMillis;
 
   protected transient B lastProcessedBlock;
@@ -351,9 +356,9 @@ public abstract class AbstractBlockReader<R, B extends BlockMetadata, STREAM ext
 
     List<Stats.OperatorStats> lastWindowedStats = stats.getLastWindowedStats();
     if (lastWindowedStats != null && lastWindowedStats.size() > 0) {
-      int queueSize = lastWindowedStats.get(lastWindowedStats.size() - 1).inputPorts.get(0).queueSize;
-      if (queueSize > 0) {
-        backlogPerOperator.put(stats.getOperatorId(), (long) queueSize);
+      Stats.OperatorStats lastStats = lastWindowedStats.get(lastWindowedStats.size() - 1);
+      if (lastStats.inputPorts.size() > 0) {
+        backlogPerOperator.put(stats.getOperatorId(), lastStats.inputPorts.get(0).queueSize);
       }
     }
 
@@ -364,7 +369,7 @@ public abstract class AbstractBlockReader<R, B extends BlockMetadata, STREAM ext
     LOG.debug("Proposed NextMillis = {}", nextMillis);
 
     long totalBacklog = 0;
-    for (Map.Entry<Integer, Long> backlog : backlogPerOperator.entrySet()) {
+    for (Map.Entry<Integer, Integer> backlog : backlogPerOperator.entrySet()) {
       totalBacklog += backlog.getValue();
     }
     LOG.debug("backlog {} partitionCount {}", totalBacklog, partitionCount);

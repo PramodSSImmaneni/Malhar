@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 DataTorrent, Inc. ALL Rights Reserved.
+ * Copyright (c) 2015 DataTorrent, Inc. ALL Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,22 @@ public class TimeBasedBucketManagerTest
 
     long rBucket2 = manager.getBucketKeyFor(event2);
     Assert.assertEquals("valid event", bucket2, rBucket2);
+  }
+
+  @Test
+  public void testClone() throws CloneNotSupportedException, InterruptedException
+  {
+    AbstractTimeBasedBucketManager<DummyEvent> clonedManager = manager.clone();
+    Assert.assertNotNull(clonedManager);
+    Assert.assertNotNull(clonedManager.getBucketStore());
+    Assert.assertTrue(clonedManager.bucketStore.equals(manager.bucketStore));
+    Assert.assertTrue(clonedManager.writeEventKeysOnly==manager.writeEventKeysOnly);
+    Assert.assertTrue(clonedManager.noOfBuckets==manager.noOfBuckets);
+    Assert.assertTrue(clonedManager.noOfBucketsInMemory==manager.noOfBucketsInMemory);
+    Assert.assertTrue(clonedManager.maxNoOfBucketsInMemory==manager.maxNoOfBucketsInMemory);
+    Assert.assertTrue(clonedManager.millisPreventingBucketEviction== manager.millisPreventingBucketEviction);
+    Assert.assertTrue(clonedManager.committedWindow==manager.committedWindow);
+    Assert.assertTrue(clonedManager.getMaxTimesPerBuckets().length== manager.getMaxTimesPerBuckets().length);
   }
 
   @BeforeClass

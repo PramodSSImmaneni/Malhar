@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 DataTorrent, Inc. ALL Rights Reserved.
+ * Copyright (c) 2015 DataTorrent, Inc. ALL Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class BucketManagerTest
   {
 
     @Override
-    public void bucketLoaded(Bucket<DummyEvent> bucket)
+    public void bucketLoaded(AbstractBucket<DummyEvent> bucket)
     {
       try {
         eventBucketExchanger.exchange(bucket.bucketKey);
@@ -84,7 +84,7 @@ public class BucketManagerTest
       manager.newEvent(bucket1, dummyEvent);
     }
     manager.endWindow(round);
-    Bucket<DummyEvent> bucket = manager.getBucket(bucket1);
+    AbstractBucket<DummyEvent> bucket = manager.getBucket(bucket1);
     Assert.assertNotNull(bucket);
     Assert.assertEquals("no of events", (round + 1) * 10, bucket.countOfWrittenEvents());
   }
@@ -118,6 +118,25 @@ public class BucketManagerTest
     }
   }
 
+  @Test
+  public void testClone() throws CloneNotSupportedException, InterruptedException
+  {
+    manager.loadBucketData(bucket1);
+    eventBucketExchanger.exchange(null);
+    manager.loadBucketData(bucket2);
+    eventBucketExchanger.exchange(null);
+    Assert.assertNotNull(manager.getBucket(bucket2));
+    AbstractBucketManager<DummyEvent> clonedManager = manager.clone();
+    Assert.assertNull(clonedManager.getBucket(bucket1));
+    Assert.assertNotNull(clonedManager.getBucket(bucket2));
+    Assert.assertNotNull(clonedManager.getBucketStore());
+    Assert.assertTrue(clonedManager.writeEventKeysOnly==manager.writeEventKeysOnly);
+    Assert.assertTrue(clonedManager.noOfBuckets==manager.noOfBuckets);
+    Assert.assertTrue(clonedManager.noOfBucketsInMemory==manager.noOfBucketsInMemory);
+    Assert.assertTrue(clonedManager.maxNoOfBucketsInMemory==manager.maxNoOfBucketsInMemory);
+    Assert.assertTrue(clonedManager.millisPreventingBucketEviction== manager.millisPreventingBucketEviction);
+    Assert.assertTrue(clonedManager.committedWindow==manager.committedWindow);
+  }
 
   @BeforeClass
   public static void setup() throws Exception
