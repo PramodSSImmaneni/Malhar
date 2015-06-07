@@ -26,6 +26,10 @@
     <name>dt.operator.Stage4.prop.stage</name>
     <value>4</value>
   </property>
+  <property>
+    <name>dt.operator.Stage5.prop.stage</name>
+    <value>4</value>
+  </property>
   <!--property>
     <name>dt.application.EventTree.operator.Stage5.attr.PARTITIONER</name>
     <value>com.datatorrent.lib.partitioner.StatelessPartitioner:2</value>
