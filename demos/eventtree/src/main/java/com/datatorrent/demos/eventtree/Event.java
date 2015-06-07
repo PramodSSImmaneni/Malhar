@@ -6,7 +6,7 @@ package com.datatorrent.demos.eventtree;
 public class Event
 {
   long parentId;
-  int stage;
+  //int stage;
   /**
    * Any other event data that is needed 
    */

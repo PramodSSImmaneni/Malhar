@@ -41,7 +41,7 @@ public class EventInput implements InputOperator
       for (int j = 0; j < explodeFactor; ++j) {
         Event event = new Event();
         event.parentId = nextId;
-        event.stage = 1;
+        //event.stage = 1;
         output.emit(event);
       }
       EventCount eventCount = new EventCount();

@@ -14,6 +14,18 @@
     <name>dt.application.*.operator.*.port.*.attr.QUEUE_CAPACITY</name>
     <value>32768</value>
   </property>
+  <property>
+    <name>dt.operator.Stage2.prop.stage</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>dt.operator.Stage3.prop.stage</name>
+    <value>3</value>
+  </property>
+  <property>
+    <name>dt.operator.Stage4.prop.stage</name>
+    <value>4</value>
+  </property>
   <!--property>
     <name>dt.application.EventTree.operator.Stage5.attr.PARTITIONER</name>
     <value>com.datatorrent.lib.partitioner.StatelessPartitioner:2</value>

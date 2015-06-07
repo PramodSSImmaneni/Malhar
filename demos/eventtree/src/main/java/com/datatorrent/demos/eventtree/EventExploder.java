@@ -30,6 +30,8 @@ public class EventExploder extends BaseOperator
     }
   };
   */
+
+  int stage;
   
   private Map<Long, EventProcessed> processedCounts = Maps.newHashMap();
   private long lastProcessedSent = System.currentTimeMillis();
@@ -40,11 +42,11 @@ public class EventExploder extends BaseOperator
     public void process(Event event)
     {
       if (output.isConnected()) {
-        int stage = event.stage + 1; 
+        //int stage = event.stage + 1;
         for (int i = 0; i < explodeFactor; ++i) {
           Event childEvent = new Event();
           childEvent.parentId = event.parentId;
-          childEvent.stage = stage;
+          //childEvent.stage = stage;
           output.emit(childEvent);
         }
         EventCount eventCount = new EventCount();
@@ -55,10 +57,14 @@ public class EventExploder extends BaseOperator
       } else if (processed.isConnected()) {
         EventProcessed eventProcessed = new EventProcessed();
         eventProcessed.parentId = event.parentId;
-        eventProcessed.stage = event.stage;
+        //eventProcessed.stage = event.stage;
+        eventProcessed.stage = stage;
         eventProcessed.count = 1;
-        addProcessedCount(event.parentId, event.stage, 1);
+        //addProcessedCount(event.parentId, event.stage, 1);
+        addProcessedCount(event.parentId, stage, 1);
         handleProcessedCounts(false);
+
+        EventCount eventCount = new EventCount();
       }
     }
   };
@@ -100,5 +106,15 @@ public class EventExploder extends BaseOperator
   public void setExplodeFactor(int explodeFactor)
   {
     this.explodeFactor = explodeFactor;
+  }
+
+  public int getStage()
+  {
+    return stage;
+  }
+
+  public void setStage(int stage)
+  {
+    this.stage = stage;
   }
 }
